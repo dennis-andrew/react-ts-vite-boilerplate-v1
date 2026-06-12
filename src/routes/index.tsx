@@ -18,6 +18,7 @@ export const router = createRouter({
   defaultNotFoundComponent: RouteNotFoundFallback,
   context: {
     auth: {},
+    queryClient,
   },
 })
 
@@ -37,7 +38,7 @@ const AppRouter = () => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} context={{ auth }} />
+        <RouterProvider router={router} context={{ auth, queryClient }} />
       </QueryClientProvider>
     </Suspense>
   )

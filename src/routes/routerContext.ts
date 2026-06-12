@@ -1,3 +1,4 @@
+import { type QueryClient } from '@tanstack/react-query'
 import { User } from 'src/models/user.model'
 
 export interface RouterAuthContext {
@@ -10,4 +11,5 @@ export interface RouterAuthContext {
 
 export interface RouterContext {
   auth: RouterAuthContext
+  queryClient: QueryClient
 }

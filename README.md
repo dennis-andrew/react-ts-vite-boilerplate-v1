@@ -746,11 +746,80 @@ Use route loaders for route-critical data that should be resolved before a page 
 
 For larger apps, route loaders can coordinate with the shared `queryClient` to prefetch critical queries and avoid loading waterfalls.
 
+#### TanStack Router + Query Pattern
+
+The boilerplate exposes the shared React Query `queryClient` through TanStack Router context. Use this when route loaders need to warm or require Query cache data before a page renders.
+
+Keep query options in feature service files so routes, components, tests, and mutations all share the same query key and query function:
+
+```typescript
+// src/services/users/users.queries.ts
+import { queryOptions } from '@tanstack/react-query'
+import { getUsers } from './users.api'
+
+export interface UsersSearch {
+  page: number
+  query: string
+}
+
+export const usersQueryOptions = (search: UsersSearch) =>
+  queryOptions({
+    queryKey: ['users', 'list', search],
+    queryFn: () => getUsers(search),
+  })
+```
+
+Use route search params as the source of truth for list query keys. This keeps filters, pagination, browser back/forward behavior, and Query cache entries aligned:
+
+```typescript
+// src/routes/app/_authenticated.users.tsx
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
+import {
+  readPositiveIntegerSearchParam,
+  readTrimmedStringSearchParam,
+} from 'src/routes/routerSearchUtils'
+import { usersQueryOptions } from 'src/services/users/users.queries'
+import Users from 'src/views/Users'
+
+export const Route = createFileRoute('/_authenticated/users')({
+  validateSearch: (search) => ({
+    page: readPositiveIntegerSearchParam(search.page, 1),
+    query: readTrimmedStringSearchParam(search.query),
+  }),
+  loaderDeps: ({ search }) => search,
+  loader: ({ context, deps }) =>
+    context.queryClient.ensureQueryData(usersQueryOptions(deps)),
+  component: UsersRoute,
+})
+
+function UsersRoute() {
+  const search = Route.useSearch()
+  const { data } = useSuspenseQuery(usersQueryOptions(search))
+
+  return <Users users={data} />
+}
+```
+
+Use this convention for Query keys:
+
+- `['users']` for all user-related data
+- `['users', 'list', search]` for list pages driven by route search
+- `['users', 'detail', userId]` for dynamic detail routes
+- `['users', 'permissions', userId]` for related child resources
+
+After mutations, invalidate Query cache for changed server data. Call `router.invalidate()` only when route guards, loaders, or router context decisions need to be re-evaluated.
+
+```typescript
+await queryClient.invalidateQueries({ queryKey: ['users'] })
+await router.invalidate()
+```
+
 #### Route Fallbacks
 
 The boilerplate defines default pending, error, and not-found fallbacks in `src/routes/routeFallbacks.tsx` and wires them in `src/routes/index.tsx`. Override these at the route level only when a feature needs a more specific empty, error, or loading state.
 
-Keep router context generic and small. The current router context receives `AuthContext` through `RouterProvider`, so route guards can read auth state without importing React context directly. Add new router context values only when they are needed before a route loads, and invalidate the router when context values that guards depend on change.
+Keep router context generic and small. The current router context receives `AuthContext` and the shared React Query `queryClient` through `RouterProvider`, so route guards and loaders can read pre-render dependencies without importing React context directly. Add new router context values only when they are needed before a route loads, and invalidate the router when context values that guards depend on change.
 
 Use TanStack Router primitives for navigation:
 
