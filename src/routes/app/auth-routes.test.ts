@@ -1,21 +1,10 @@
-import { isRedirect } from '@tanstack/react-router'
 import { LocalStorage } from 'src/enums/localStorage'
 import { AppRoutes } from 'src/routes/routeConstants/appRoutes'
+import { expectRedirect } from 'src/routes/routerTestUtils'
 import { Route as AuthenticatedRoute } from './_authenticated'
 import { Route as AuthLoginRoute } from './auth.login'
 
 const { ACCESS_TOKEN, REFRESH_TOKEN } = LocalStorage
-
-const expectRedirect = (callback: () => void) => {
-  try {
-    callback()
-  } catch (error) {
-    expect(isRedirect(error)).toBe(true)
-    return error as { options: Record<string, unknown> }
-  }
-
-  throw new Error('Expected route guard to throw a redirect')
-}
 
 describe('TanStack auth routes', () => {
   beforeEach(() => {

@@ -4,9 +4,18 @@ import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { queryClient } from 'src/config/queryConfig'
 import { AuthContext } from 'src/context/AuthContext'
 import { routeTree } from 'src/routeTree.gen'
+import {
+  RouteErrorFallback,
+  RouteNotFoundFallback,
+  RoutePendingFallback,
+} from './routeFallbacks'
 
 export const router = createRouter({
   routeTree,
+  defaultPreload: 'intent',
+  defaultPendingComponent: RoutePendingFallback,
+  defaultErrorComponent: RouteErrorFallback,
+  defaultNotFoundComponent: RouteNotFoundFallback,
   context: {
     auth: {},
   },

@@ -1,11 +1,11 @@
+import { readTrimmedStringSearchParam } from './routerSearchUtils'
+
 export interface RedirectSearch {
   redirect?: string
 }
 
 export const getSafeRedirect = (redirect: unknown): string | undefined => {
-  if (typeof redirect !== 'string') return undefined
-
-  const trimmedRedirect = redirect.trim()
+  const trimmedRedirect = readTrimmedStringSearchParam(redirect)
 
   if (!trimmedRedirect.startsWith('/') || trimmedRedirect.startsWith('//')) {
     return undefined
